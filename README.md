@@ -1,47 +1,57 @@
-# Svelte + TS + Vite
+# Space Tracer
 
-This template should help get you started developing with Svelte and TypeScript in Vite.
+I always wanted a controllable tool for tracing bitmap images into svg paths
 
-## Recommended IDE Setup
+## Mechanism
 
-[VS Code](https://code.visualstudio.com/) + [Svelte](https://marketplace.visualstudio.com/items?itemName=svelte.svelte-vscode).
+### BuildGrid
 
-## Need an official Svelte framework?
+- build a grid of cells, 1 cell is 1 pixel
+- get each cell's supposed filled rate from the pixel brightness or transparency
 
-Check out [SvelteKit](https://github.com/sveltejs/kit#readme), which is also powered by Vite. Deploy anywhere with its serverless-first approach and adapt to various platforms, with out of the box support for TypeScript, SCSS, and Less, and easily-added support for mdsvex, GraphQL, PostCSS, Tailwind CSS, and more.
+### DetectCategory
 
-## Technical considerations
+- categorize each cell into `center cell` (filled rate > 98%), `empty cell` (filled rate < 2%), `edge cell` (any thing between)
+- thresholds can be configured separately
 
-**Why use this over SvelteKit?**
+### DetectFacing
 
-- It brings its own routing solution which might not be preferable for some users.
-- It is first and foremost a framework that just happens to use Vite under the hood, not a Vite app.
+- detect a general facing direction for each `edge cell` by averaging it's neighbours
 
-This template contains as little as possible to get started with Vite + TypeScript + Svelte, while taking into account the developer experience with regards to HMR and intellisense. It demonstrates capabilities on par with the other `create-vite` templates and is a good starting point for beginners dipping their toes into a Vite + Svelte project.
+### SmoothFacing
 
-Should you later need the extended capabilities and extensibility provided by SvelteKit, the template has been structured similarly to SvelteKit so that it is easy to migrate.
+- average facing direction for each `edge cell` with it's neighbours having similar angles
 
-**Why `global.d.ts` instead of `compilerOptions.types` inside `jsconfig.json` or `tsconfig.json`?**
+### MatchArea
 
-Setting `compilerOptions.types` shuts out all other types not explicitly listed in the configuration. Using triple-slash references keeps the default TypeScript setting of accepting type information from the entire workspace, while also adding `svelte` and `vite/client` type information.
+- create a polygon for each cell by: have a fixed segment that is perpendicular to the facing direction, move the fixed segment along the facing direction until the remaining area matches the filled rate
+- this process has been optimized using calculus to a simple formula
 
-**Why include `.vscode/extensions.json`?**
+### JoinVertex
 
-Other templates indirectly recommend extensions via the README, but this file allows VS Code to prompt the user to install the recommended extension upon opening the project.
+- join near by vertices to their mid point
+- added a lots of constraints to eliminate weird shapes
 
-**Why enable `allowJs` in the TS template?**
+### UnifyShape
 
-While `allowJs: false` would indeed prevent the use of `.js` files in the project, it does not prevent the use of JavaScript syntax in `.svelte` files. In addition, it would force `checkJs: false`, bringing the worst of both worlds: not being able to guarantee the entire codebase is TypeScript, and also having worse typechecking for the existing JavaScript. In addition, there are valid use cases in which a mixed codebase may be relevant.
+- combind all polygons into one polygon
 
-**Why is HMR not preserving my local component state?**
+### SmoothShape
 
-HMR state preservation comes with a number of gotchas! It has been disabled by default in both `svelte-hmr` and `@sveltejs/vite-plugin-svelte` due to its often surprising behavior. You can read the details [here](https://github.com/rixo/svelte-hmr#svelte-hmr).
+- smooth edges using the Visvalingam’s algorithm until the removed triangles is larger than a set value
+- interpolate a curve using the Algorithm for Automatically Fitting Digitized Curves
 
-If you have state that's important to retain within a component, consider creating an external store which would not be replaced by HMR.
+## TODO
 
-```ts
-// store.ts
-// An extremely simple external store
-import { writable } from 'svelte/store'
-export default writable(0)
-```
+- [ ] Prevent Polygon Calculation Errors
+- [ ] Corner Detection, make corners more recognizable.
+- [ ] Match Area Again after Join Vertex
+- [ ] Perfomance, optimize code
+- [ ] Use Multi-Thread
+- [ ] Zoom In & Pan
+- [ ] Path Editor, allow user to fine tune points by hand
+
+## Other Useful Tools
+
+- [SvgPathEditor](https://yqnn.github.io/svg-path-editor/) by Yqnn
+- [SVGOMG](https://jakearchibald.github.io/svgomg/) by jakearchibald

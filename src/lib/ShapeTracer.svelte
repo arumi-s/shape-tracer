@@ -325,16 +325,15 @@
 
 		shapes = curvePolygon(finalPolygon, lowerAngleBound, upperAngleBound);
 
-		//points = chain;
-		//path = curve.map((b) => `M${b[0].x} ${b[0].y} C${b[1].x} ${b[1].y} ${b[2].x} ${b[2].y} ${b[3].x} ${b[3].y}`).join(" ");
-
 		shapePath = printPolygon(finalPolygon);
 
-		/*eachCell(grid, (cell) => {
+		eachCell(grid, (cell) => {
 			if (cell.type === CellType.EDGE) {
-				cell.area = clipPolygonAt(finalPolygon, cell.position).area();
+				try {
+					cell.area = clipPolygonAt(finalPolygon, cell.position).area();
+				} catch (_: unknown) {}
 			}
-		});*/
+		});
 	}
 	function printBezier(
 		curves: (Curve | DegenerateCurve)[] | Readonly<(Curve | DegenerateCurve)[]>,
