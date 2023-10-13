@@ -1,7 +1,7 @@
 <script lang="ts">
 	import ShapeTracer from "./lib/ShapeTracer.svelte";
 
-	let src: string = "src/assets/heart.png";
+	let src: string = "./tests/heart.png";
 
 	async function selectFile(file: File) {
 		src = URL.createObjectURL(await new Response(file).blob());
