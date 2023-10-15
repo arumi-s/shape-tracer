@@ -71,11 +71,11 @@ export function smoothPolygon(polygon: Polygon, threshold = 1) {
 	const edgeAreaMap = new WeakMap<Edge, number>();
 
 	let smallestArea: number;
-	let smallestEdge: Edge | null;
+	let smallestEdges: Edge[] = [];
 
 	while (true) {
 		smallestArea = Infinity;
-		smallestEdge = null;
+		smallestEdges = [];
 
 		for (const face of polygon.faces) {
 			if (face instanceof Face) {
@@ -95,8 +95,10 @@ export function smoothPolygon(polygon: Polygon, threshold = 1) {
 							edgeAreaMap.set(edge, area);
 						}
 
-						if (area < smallestArea) {
-							smallestEdge = edge;
+						if (Utils.EQ(area, smallestArea)) {
+							smallestEdges.push(edge);
+						} else if (area < smallestArea) {
+							smallestEdges = [edge];
 							smallestArea = area;
 						}
 					}
@@ -105,10 +107,12 @@ export function smoothPolygon(polygon: Polygon, threshold = 1) {
 			}
 		}
 
-		if (smallestEdge && smallestArea <= threshold) {
-			edgeAreaMap.delete(smallestEdge.prev);
-			edgeAreaMap.delete(smallestEdge.next);
-			polygon.removeEndVertex(smallestEdge.prev);
+		if (smallestEdges.length && smallestArea <= threshold) {
+			for (const smallestEdge of smallestEdges) {
+				edgeAreaMap.delete(smallestEdge.prev);
+				edgeAreaMap.delete(smallestEdge.next);
+				polygon.removeEndVertex(smallestEdge.prev);
+			}
 		} else break;
 	}
 
@@ -165,11 +169,11 @@ export function fixPolygon(polygon: Polygon) {
 
 export function findCurvePoints(
 	face: Face,
-	lowerAngleBound = 1,
-	upperAngleBound = 20,
+	minCurveAngle = 1,
+	maxCurveAngle = 20,
 ) {
-	const lowerThreshold = Math.cos((Math.PI * lowerAngleBound) / 180);
-	const upperThreshold = Math.cos((Math.PI * upperAngleBound) / 180);
+	const lowerThreshold = Math.cos((Math.PI * minCurveAngle) / 180);
+	const upperThreshold = Math.cos((Math.PI * maxCurveAngle) / 180);
 	let start = face.first;
 	let restarted = false;
 	let restarting = false;
@@ -218,15 +222,18 @@ export type DegenerateCurve = [Curve[0], Curve[0]];
 
 export function curvePolygon(
 	polygon: Polygon,
-	lowerAngleBound = 1,
-	upperAngleBound = 20,
+	minCurveAngle = 1,
+	maxCurveAngle = 20,
+	maxCurveError = 0.01,
 ) {
 	return [...polygon.faces].map((face) =>
-		findCurvePoints(face, lowerAngleBound, upperAngleBound).map((chain) => ({
+		findCurvePoints(face, minCurveAngle, maxCurveAngle).map((chain) => ({
 			chain,
 			curve: (chain.length === 2
 				? [[chain[0], chain[1]]]
-				: fitCurve(chain, 0.01)) as Readonly<(Curve | DegenerateCurve)[]>,
+				: fitCurve(chain, maxCurveError)) as Readonly<
+				(Curve | DegenerateCurve)[]
+			>,
 		})),
 	);
 }

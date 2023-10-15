@@ -25,6 +25,28 @@
 		}
 	}}
 >
+	<div class="fixed left-0 top-0 z-10 bg-white/80 p-4 flex flex-col gap-2">
+		<a class="text-lg" href="./">Shape Tracer</a>
+		<a
+			class="text-sm text-blue-500 hover:text-blue-700 hover:underline"
+			href="https://github.com/arumi-s/shape-tracer"
+			target="_blank"
+			rel="noopener noreferrer">Github</a
+		>
+		<hr class="border-neutral-400" />
+		<a
+			class="text-sm text-blue-500 hover:text-blue-700 hover:underline"
+			href="https://yqnn.github.io/svg-path-editor/"
+			target="_blank"
+			rel="noopener noreferrer">SvgPathEditor</a
+		>
+		<a
+			class="text-sm text-blue-500 hover:text-blue-700 hover:underline"
+			href="https://jakearchibald.github.io/svgomg/"
+			target="_blank"
+			rel="noopener noreferrer">SVGOMG</a
+		>
+	</div>
 	{#if src !== ""}
 		<ShapeTracer {src} />
 	{/if}

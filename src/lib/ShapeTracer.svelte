@@ -35,8 +35,9 @@
 	let emptyThreshold = 0.02;
 	let nearAngleThreshold = 10;
 	let smoothThreshold = 0.5;
-	let lowerAngleBound = 1;
-	let upperAngleBound = 20;
+	let minCurveAngle = 1;
+	let maxCurveAngle = 20;
+	let maxCurveError = 0.01;
 
 	try {
 		const data = JSON.parse(localStorage.getItem("options") ?? "");
@@ -47,8 +48,9 @@
 		if ("nearAngleThreshold" in data)
 			nearAngleThreshold = data.nearAngleThreshold;
 		if ("smoothThreshold" in data) smoothThreshold = data.smoothThreshold;
-		if ("lowerAngleBound" in data) lowerAngleBound = data.lowerAngleBound;
-		if ("upperAngleBound" in data) upperAngleBound = data.upperAngleBound;
+		if ("minCurveAngle" in data) minCurveAngle = data.minCurveAngle;
+		if ("maxCurveAngle" in data) maxCurveAngle = data.maxCurveAngle;
+		if ("maxCurveError" in data) maxCurveError = data.maxCurveError;
 	} catch (_: unknown) {}
 
 	$: {
@@ -61,8 +63,9 @@
 				emptyThreshold,
 				nearAngleThreshold,
 				smoothThreshold,
-				lowerAngleBound,
-				upperAngleBound,
+				minCurveAngle,
+				maxCurveAngle,
+				maxCurveError,
 			}),
 		);
 	}
@@ -323,7 +326,12 @@
 	function processSmoothShape() {
 		const finalPolygon = smoothPolygon(combinedPolygon!, smoothThreshold);
 
-		shapes = curvePolygon(finalPolygon, lowerAngleBound, upperAngleBound);
+		shapes = curvePolygon(
+			finalPolygon,
+			minCurveAngle,
+			maxCurveAngle,
+			maxCurveError,
+		);
 
 		shapePath = printPolygon(finalPolygon);
 
@@ -403,8 +411,9 @@
 	$: {
 		if (combinedPolygon && triggerSmoothShape) {
 			smoothThreshold;
-			lowerAngleBound;
-			upperAngleBound;
+			minCurveAngle;
+			maxCurveAngle;
+			maxCurveError;
 			processSmoothShape();
 		}
 	}
@@ -431,7 +440,7 @@
 	}
 </script>
 
-<div class="fixed right-0 top-0 z-10">
+<div class="fixed right-0 top-0 z-20">
 	<div class="bg-white/80 p-4 flex flex-col gap-2">
 		<label class="space-y-1">
 			<div class="font-bold">useTransparency</div>
@@ -506,31 +515,45 @@
 			/>
 		</label>
 		<label class="space-y-1">
-			<div class="font-bold">lowerAngleBound</div>
+			<div class="font-bold">minCurveAngle</div>
 			<input
 				class="w-32 py-1 px-2"
 				type="number"
-				name="lowerAngleBound"
-				id="lowerAngleBound"
-				bind:value={lowerAngleBound}
+				name="minCurveAngle"
+				id="minCurveAngle"
+				bind:value={minCurveAngle}
 				min="0"
 				max="90"
 				step="1"
 			/>
 		</label>
 		<label class="space-y-1">
-			<div class="font-bold">upperAngleBound</div>
+			<div class="font-bold">maxCurveAngle</div>
 			<input
 				class="w-32 py-1 px-2"
 				type="number"
-				name="upperAngleBound"
-				id="upperAngleBound"
-				bind:value={upperAngleBound}
+				name="maxCurveAngle"
+				id="maxCurveAngle"
+				bind:value={maxCurveAngle}
 				min="0"
 				max="90"
 				step="1"
 			/>
 		</label>
+		<label class="space-y-1">
+			<div class="font-bold">maxCurveError</div>
+			<input
+				class="w-32 py-1 px-2"
+				type="number"
+				name="maxCurveError"
+				id="maxCurveError"
+				bind:value={maxCurveError}
+				min="0"
+				max="2"
+				step="0.01"
+			/>
+		</label>
+
 		<hr class="border-neutral-400" />
 		<button
 			class="border bg-neutral-400 py-1 px-2 hover:bg-neutral-500 active:scale-95 transition-all"
@@ -599,24 +622,26 @@
 					<circle cx={point.x} cy={point.y} r="0.1" />
 				{/each}
 			</g>
-			{#each shapes as sections}
-				{#each sections as section, i}
-					<g>
-						{#each section.chain as point}
-							<circle
-								class={randomFillColor(i)}
-								cx={point.x}
-								cy={point.y}
-								r="0.1"
+			<g>
+				{#each shapes as sections}
+					{#each sections as section, i}
+						<g>
+							{#each section.chain as point}
+								<circle
+									class={randomFillColor(i)}
+									cx={point.x}
+									cy={point.y}
+									r="0.1"
+								/>
+							{/each}
+							<path
+								class="{randomStrokeColor(i)} stroke-[0.05] fill-none"
+								d={printBezier(section.curve)}
 							/>
-						{/each}
-						<path
-							class="{randomStrokeColor(i)} stroke-[0.05] fill-none"
-							d={printBezier(section.curve)}
-						/>
-					</g>
+						</g>
+					{/each}
 				{/each}
-			{/each}
+			</g>
 		</svg>
 	</div>
 </ScaledView>
