@@ -9,7 +9,6 @@
 		Point,
 	} from "@flatten-js/core";
 	import copy from "copy-to-clipboard";
-	import ScaledView from "./ScaledView.svelte";
 	import { PI2, calcArea, matchArea } from "../math/area";
 	import { type Cell, CellType, type CellVertex } from "../math/cell";
 	import {
@@ -26,6 +25,8 @@
 	} from "../math/polygon";
 	import { isCornerPoint, mixPoints } from "../math/point";
 	import { eachCell, eachNeighbour, type Grid } from "../math/grid";
+	import { loadImage } from "../math/image";
+	import { ScaledView } from "svelte-scaled-view";
 
 	export let src: string;
 
@@ -71,7 +72,7 @@
 	}
 
 	let image: HTMLImageElement;
-
+	let canvas: HTMLCanvasElement;
 	let grid: Grid = {
 		width: 0,
 		height: 0,
@@ -80,16 +81,17 @@
 
 	let combinedPolygon: Polygon | null = null;
 	let shapePath = "";
+	let shapes: ReturnType<typeof curvePolygon> = [];
 
-	function handleImageLoad() {
+	async function processLoadSrc(src: string) {
+		image = await loadImage(src);
+
 		triggerBuildGrid++;
 	}
-
 	function processBuildGrid() {
 		const width = image.width;
 		const height = image.height;
 
-		const canvas = document.createElement("canvas");
 		canvas.width = width;
 		canvas.height = height;
 		const context = canvas.getContext("2d")!;
@@ -322,7 +324,6 @@
 		combinedPolygon = polygon;
 		triggerSmoothShape++;
 	}
-	let shapes: ReturnType<typeof curvePolygon> = [];
 	function processSmoothShape() {
 		const finalPolygon = smoothPolygon(combinedPolygon!, smoothThreshold);
 
@@ -368,6 +369,9 @@
 	let triggerUnifyShape = 0;
 	let triggerSmoothShape = 0;
 
+	$: {
+		processLoadSrc(src);
+	}
 	$: {
 		if (triggerBuildGrid) {
 			useTransparency;
@@ -578,16 +582,10 @@
 </div>
 <ScaledView>
 	<div
-		class="grid border-white/50 [&>*]:row-start-1 [&>*]:col-start-1 xscale-[2.5] origin-bottom-left"
+		class="grid place-items-center border-white/50 [&>*]:row-start-1 [&>*]:col-start-1 xscale-[2.5] origin-bottom-left"
 	>
-		<img
-			class="pointer-events-none"
-			{src}
-			alt="target"
-			bind:this={image}
-			on:load={handleImageLoad}
-		/>
-		<svg width={grid.width} height={grid.height}>
+		<canvas class="w-full h-full pointer-events-none" bind:this={canvas} />
+		<svg class="w-full h-full" viewBox="0 0 {grid.width} {grid.height}">
 			<g>
 				{#each grid.cells as cell, i (i)}
 					{#if cell.type !== CellType.EMPTY}
@@ -647,7 +645,7 @@
 </ScaledView>
 
 <style lang="postcss">
-	img {
+	canvas {
 		image-rendering: pixelated;
 	}
 </style>
